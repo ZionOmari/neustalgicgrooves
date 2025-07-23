@@ -1,0 +1,25 @@
+{
+  "name": "neustalgic-grooves",
+  "version": "1.0.0",
+  "description": "Dance program website for Neustalgic Grooves",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm start",
+    "install-deps": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start"
+  },
+  "keywords": [
+    "dance",
+    "breaking",
+    "funk",
+    "classes"
+  ],
+  "author": "Neustalgic Grooves",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
