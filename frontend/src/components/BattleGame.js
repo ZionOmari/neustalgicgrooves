@@ -1,172 +1,373 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 const BattleGame = ({ isOpen, onClose }) => {
-  const [bBoyPos, setBBoyPos] = useState({ x: 0, y: 0, rotation: 0, move: '🕺', energy: 100 });
-  const [bGirlPos, setBGirlPos] = useState({ x: 0, y: 0, rotation: 0, move: '💃', energy: 100 });
-  const [score, setScore] = useState({ bboy: 0, bgirl: 0 });
-  const [currentMove, setCurrentMove] = useState('');
-  const [combo, setCombo] = useState(0);
-  const [crowdHype, setCrowdHype] = useState(50);
-  const [battlePhase, setBattlePhase] = useState('GETTING READY...');
-  const [moveHistory, setMoveHistory] = useState([]);
-  const [isSpinning, setIsSpinning] = useState({ bboy: false, bgirl: false });
+  // CORE GAME STATE
+  const [gameState, setGameState] = useState({
+    bboy: { x: 0, y: 0, rotation: 0, energy: 100, combo: 0, score: 0, isMoving: false },
+    bgirl: { x: 0, y: 0, rotation: 0, energy: 100, combo: 0, score: 0, isMoving: false },
+    currentMove: '',
+    battlePhase: 'WARM UP',
+    crowdEnergy: 50,
+    winner: null,
+    round: 1,
+    maxRounds: 3
+  });
 
-  // REALISTIC BREAKING MOVES with actual street names and difficulty
+  // REALISTIC BREAKING MOVES with proper street names and effects
   const moves = useMemo(() => ({
-    // B-Boy Foundation moves
-    'q': { name: 'TOP ROCK', emoji: '🕺', type: 'bboy', difficulty: 1, energy: -5, hype: 5, description: 'Basic uprock step' },
-    'w': { name: 'WINDMILL', emoji: '🌪️', type: 'bboy', difficulty: 8, energy: -25, hype: 30, description: 'Continuous back spins' },
-    'e': { name: 'FREEZE', emoji: '🧊', type: 'bboy', difficulty: 5, energy: -15, hype: 20, description: 'Power freeze hold' },
-    'a': { name: '6-STEP', emoji: '👟', type: 'bboy', difficulty: 3, energy: -10, hype: 10, description: 'Classic footwork' },
-    's': { name: 'HEADSPIN', emoji: '🌀', type: 'bboy', difficulty: 9, energy: -30, hype: 40, description: 'Spinning on head' },
-    'd': { name: 'FLARE', emoji: '🔥', type: 'bboy', difficulty: 10, energy: -35, hype: 50, description: 'Continuous leg circles' },
-    'r': { name: 'BABY FREEZE', emoji: '❄️', type: 'bboy', difficulty: 2, energy: -8, hype: 8, description: 'Basic freeze' },
-    't': { name: 'AIR TRACK', emoji: '✈️', type: 'bboy', difficulty: 7, energy: -20, hype: 25, description: 'Airborne footwork' },
-    
-    // B-Girl Foundation moves  
-    'u': { name: 'TOP ROCK', emoji: '💃', type: 'bgirl', difficulty: 1, energy: -5, hype: 5, description: 'Stylish uprock' },
-    'i': { name: 'WINDMILL', emoji: '🌪️', type: 'bgirl', difficulty: 8, energy: -25, hype: 30, description: 'Power windmills' },
-    'o': { name: 'FREEZE', emoji: '🧊', type: 'bgirl', difficulty: 5, energy: -15, hype: 20, description: 'Signature freeze' },
-    'j': { name: 'THREAD', emoji: '🧵', type: 'bgirl', difficulty: 6, energy: -18, hype: 22, description: 'Leg threading move' },
-    'k': { name: 'BACKSPIN', emoji: '🌀', type: 'bgirl', difficulty: 4, energy: -12, hype: 15, description: 'Continuous spins' },
-    'l': { name: 'FLARE', emoji: '🔥', type: 'bgirl', difficulty: 10, energy: -35, hype: 50, description: 'Perfect leg circles' },
-    'n': { name: 'HOLLOWBACK', emoji: '🌙', type: 'bgirl', difficulty: 7, energy: -22, hype: 28, description: 'Arched back freeze' },
-    'm': { name: 'CRICKET', emoji: '🦗', type: 'bgirl', difficulty: 9, energy: -30, hype: 45, description: 'Hopping freeze' },
+    // B-BOY MOVES (WASD + QE)
+    'w': { 
+      name: 'TOP ROCK', 
+      emoji: '🕺', 
+      type: 'bboy', 
+      difficulty: 2, 
+      energy: -8, 
+      points: 15,
+      duration: 800,
+      effect: 'bounce',
+      description: 'Classic foundation step'
+    },
+    'a': { 
+      name: 'WINDMILL', 
+      emoji: '🌪️', 
+      type: 'bboy', 
+      difficulty: 9, 
+      energy: -35, 
+      points: 90,
+      duration: 2000,
+      effect: 'spin',
+      description: 'Continuous power move'
+    },
+    's': { 
+      name: 'FREEZE', 
+      emoji: '❄️', 
+      type: 'bboy', 
+      difficulty: 6, 
+      energy: -20, 
+      points: 60,
+      duration: 1500,
+      effect: 'freeze',
+      description: 'Hold that position!'
+    },
+    'd': { 
+      name: 'FLARE', 
+      emoji: '🔥', 
+      type: 'bboy', 
+      difficulty: 10, 
+      energy: -40, 
+      points: 100,
+      duration: 2500,
+      effect: 'circle',
+      description: 'Ultimate power move'
+    },
+    'q': { 
+      name: 'HEADSPIN', 
+      emoji: '🌀', 
+      type: 'bboy', 
+      difficulty: 8, 
+      energy: -30, 
+      points: 80,
+      duration: 2000,
+      effect: 'headspin',
+      description: 'Spinning on the dome'
+    },
+    'e': { 
+      name: '6-STEP', 
+      emoji: '👟', 
+      type: 'bboy', 
+      difficulty: 4, 
+      energy: -15, 
+      points: 40,
+      duration: 1200,
+      effect: 'footwork',
+      description: 'Classic footwork pattern'
+    },
+
+    // B-GIRL MOVES (Arrow Keys + Shift/Space)
+    'ArrowUp': { 
+      name: 'TOP ROCK', 
+      emoji: '💃', 
+      type: 'bgirl', 
+      difficulty: 2, 
+      energy: -8, 
+      points: 15,
+      duration: 800,
+      effect: 'bounce',
+      description: 'Stylish foundation'
+    },
+    'ArrowLeft': { 
+      name: 'WINDMILL', 
+      emoji: '🌪️', 
+      type: 'bgirl', 
+      difficulty: 9, 
+      energy: -35, 
+      points: 90,
+      duration: 2000,
+      effect: 'spin',
+      description: 'Power windmills'
+    },
+    'ArrowDown': { 
+      name: 'HOLLOWBACK', 
+      emoji: '🌙', 
+      type: 'bgirl', 
+      difficulty: 7, 
+      energy: -25, 
+      points: 70,
+      duration: 1800,
+      effect: 'freeze',
+      description: 'Signature arch freeze'
+    },
+    'ArrowRight': { 
+      name: 'THREAD', 
+      emoji: '🧵', 
+      type: 'bgirl', 
+      difficulty: 8, 
+      energy: -28, 
+      points: 80,
+      duration: 2200,
+      effect: 'thread',
+      description: 'Leg threading flow'
+    },
+    ' ': { 
+      name: 'CRICKET', 
+      emoji: '🦗', 
+      type: 'bgirl', 
+      difficulty: 10, 
+      energy: -40, 
+      points: 100,
+      duration: 2500,
+      effect: 'hop',
+      description: 'Hopping freeze mastery'
+    },
+    'Shift': { 
+      name: 'BACKSPIN', 
+      emoji: '💫', 
+      type: 'bgirl', 
+      difficulty: 5, 
+      energy: -18, 
+      points: 50,
+      duration: 1500,
+      effect: 'spin',
+      description: 'Classic spinning technique'
+    }
   }), []);
 
-  // REALISTIC PHYSICS ENGINE
+  // PHYSICS ENGINE - Makes moves look realistic
+  const getMovePhysics = useCallback((move, time = 0) => {
+    const progress = Math.min(time / move.duration, 1);
+    
+    switch (move.effect) {
+      case 'spin':
+        return {
+          x: Math.sin(time * 0.01) * 40,
+          y: Math.cos(time * 0.01) * 15,
+          rotation: time * 0.5,
+          scale: 1 + Math.sin(time * 0.02) * 0.2
+        };
+      
+      case 'freeze':
+        return {
+          x: (Math.random() - 0.5) * 10,
+          y: -30 - Math.random() * 20,
+          rotation: (Math.random() - 0.5) * 30,
+          scale: 1.2
+        };
+      
+      case 'circle':
+        const radius = 50;
+        return {
+          x: Math.cos(time * 0.02) * radius,
+          y: Math.sin(time * 0.02) * radius * 0.5,
+          rotation: time * 0.8,
+          scale: 1.1
+        };
+      
+      case 'headspin':
+        return {
+          x: Math.sin(time * 0.05) * 20,
+          y: Math.cos(time * 0.05) * 10,
+          rotation: time * 1.2,
+          scale: 0.8
+        };
+      
+      case 'footwork':
+        return {
+          x: Math.sin(time * 0.03) * 30,
+          y: Math.abs(Math.sin(time * 0.06)) * 15,
+          rotation: Math.sin(time * 0.04) * 20,
+          scale: 1
+        };
+      
+      case 'bounce':
+        return {
+          x: Math.sin(time * 0.02) * 25,
+          y: Math.abs(Math.sin(time * 0.04)) * 20,
+          rotation: Math.sin(time * 0.03) * 15,
+          scale: 1 + Math.sin(time * 0.08) * 0.1
+        };
+      
+      case 'thread':
+        return {
+          x: Math.sin(time * 0.025) * 35,
+          y: Math.cos(time * 0.015) * 25,
+          rotation: time * 0.3,
+          scale: 1
+        };
+      
+      case 'hop':
+        const hopHeight = Math.abs(Math.sin(time * 0.06)) * 40;
+        return {
+          x: Math.sin(time * 0.04) * 30,
+          y: -hopHeight,
+          rotation: Math.sin(time * 0.08) * 45,
+          scale: 1 + hopHeight * 0.01
+        };
+      
+      default:
+        return { x: 0, y: 0, rotation: 0, scale: 1 };
+    }
+  }, []);
+
+  // EXECUTE MOVE - The main game logic
   const executeMove = useCallback((key) => {
-    const move = moves[key.toLowerCase()];
+    const move = moves[key];
     if (!move) return;
 
-    const currentDancer = move.type === 'bboy' ? bBoyPos : bGirlPos;
-    const setDancer = move.type === 'bboy' ? setBBoyPos : setBGirlPos;
+    setGameState(prev => {
+      const dancer = move.type === 'bboy' ? prev.bboy : prev.bgirl;
+      
+      // Check if dancer has enough energy
+      if (dancer.energy < Math.abs(move.energy)) {
+        return {
+          ...prev,
+          currentMove: `${move.type.toUpperCase()} IS EXHAUSTED! 😮‍💨`,
+          battlePhase: 'REST TIME'
+        };
+      }
 
-    // Check energy - realistic stamina system
-    if (currentDancer.energy < Math.abs(move.energy)) {
-      setCurrentMove(`${move.type.toUpperCase()} IS EXHAUSTED! 😮‍💨`);
-      setTimeout(() => setCurrentMove(''), 1500);
-      return;
-    }
+      // Calculate scoring with combo multiplier
+      const comboMultiplier = 1 + (dancer.combo * 0.1);
+      const totalPoints = Math.floor(move.points * comboMultiplier);
+      
+      // Update crowd energy
+      const crowdBoost = move.difficulty * 2;
+      const newCrowdEnergy = Math.min(100, prev.crowdEnergy + crowdBoost);
+      
+      // Determine battle phase based on crowd energy
+      let newBattlePhase;
+      if (newCrowdEnergy > 85) newBattlePhase = '🔥 CROWD GOING WILD! 🔥';
+      else if (newCrowdEnergy > 65) newBattlePhase = '⚡ ENERGY RISING! ⚡';
+      else if (newCrowdEnergy > 45) newBattlePhase = '💫 BUILDING MOMENTUM 💫';
+      else if (newCrowdEnergy < 25) newBattlePhase = '😴 CROWD GETTING BORED 😴';
+      else newBattlePhase = '🎵 FEELING THE BEAT 🎵';
 
-    // REALISTIC MOVE PHYSICS
-    let newX = 0, newY = 0, newRotation = currentDancer.rotation;
-    
-    switch(move.name) {
-      case 'WINDMILL':
-      case 'HEADSPIN':
-      case 'BACKSPIN':
-        // Spinning moves - continuous rotation
-        setIsSpinning(prev => ({ ...prev, [move.type]: true }));
-        newRotation += 360 * (move.difficulty / 5);
-        newX = Math.sin(Date.now() / 100) * 30;
-        newY = Math.cos(Date.now() / 100) * 15;
-        setTimeout(() => setIsSpinning(prev => ({ ...prev, [move.type]: false })), 2000);
-        break;
-        
-      case 'FLARE':
-        // Power move - wide circular motion
-        newX = Math.sin(Date.now() / 50) * 60;
-        newY = Math.cos(Date.now() / 50) * 30;
-        newRotation += 720;
-        break;
-        
-      case 'FREEZE':
-      case 'BABY FREEZE':
-      case 'HOLLOWBACK':
-        // Freeze moves - static hold
-        newX = (Math.random() - 0.5) * 20;
-        newY = -20; // Lifted off ground
-        break;
-        
-      case 'TOP ROCK':
-      case '6-STEP':
-        // Footwork - ground movement
-        newX = (Math.random() - 0.5) * 40;
-        newY = Math.random() * 10;
-        break;
-        
-      default:
-        // Dynamic moves
-        newX = (Math.random() - 0.5) * 50;
-        newY = (Math.random() - 0.5) * 30;
-        newRotation += Math.random() * 180;
-    }
+      const newDancer = {
+        ...dancer,
+        energy: Math.max(0, dancer.energy + move.energy),
+        combo: dancer.combo + 1,
+        score: dancer.score + totalPoints,
+        isMoving: true
+      };
 
-    // Update dancer state with physics
-    setDancer(prev => ({
-      ...prev,
-      x: newX,
-      y: newY,
-      rotation: newRotation,
-      move: move.emoji,
-      energy: Math.max(0, prev.energy + move.energy)
-    }));
-
-    // SCORING SYSTEM - difficulty based
-    const baseScore = move.difficulty * 5;
-    const comboBonus = combo * 2;
-    const energyBonus = currentDancer.energy > 50 ? 5 : 0;
-    const totalScore = baseScore + comboBonus + energyBonus;
-
-    setScore(prev => ({ 
-      ...prev, 
-      [move.type]: prev[move.type] + totalScore 
-    }));
-
-    // CROWD HYPE SYSTEM
-    setCrowdHype(prev => {
-      const newHype = Math.min(100, prev + move.hype);
-      if (newHype > 80) setBattlePhase('CROWD GOING WILD! 🔥');
-      else if (newHype > 60) setBattlePhase('BATTLE HEATING UP! 🌡️');
-      else if (newHype < 30) setBattlePhase('CROWD GETTING BORED... 😴');
-      else setBattlePhase('BUILDING MOMENTUM... ⚡');
-      return newHype;
+      return {
+        ...prev,
+        [move.type]: newDancer,
+        currentMove: `${move.name} (${move.difficulty}/10) - ${move.description} +${totalPoints}pts`,
+        battlePhase: newBattlePhase,
+        crowdEnergy: newCrowdEnergy
+      };
     });
 
-    // COMBO SYSTEM
-    setCombo(prev => prev + 1);
-    setCurrentMove(`${move.name} (${move.difficulty}/10) - ${move.description}`);
-
-    // MOVE HISTORY for authentic battle tracking
-    setMoveHistory(prev => [
-      ...prev.slice(-4), // Keep last 5 moves
-      { name: move.name, dancer: move.type, difficulty: move.difficulty, timestamp: Date.now() }
-    ]);
-
-    // REALISTIC RECOVERY TIME based on move difficulty
-    const recoveryTime = move.difficulty * 100 + 500;
-    
+    // Reset dancer position after move duration
     setTimeout(() => {
-      setDancer(prev => ({ 
-        ...prev, 
-        x: 0, 
-        y: 0, 
-        move: move.type === 'bboy' ? '🕺' : '💃',
-        energy: Math.min(100, prev.energy + 5) // Slow energy recovery
+      setGameState(prev => ({
+        ...prev,
+        [move.type]: {
+          ...prev[move.type],
+          isMoving: false
+        }
       }));
-    }, recoveryTime);
+    }, move.duration);
 
     // Clear move display
-    setTimeout(() => setCurrentMove(''), 2000);
-  }, [moves, combo, bBoyPos, bGirlPos]);
+    setTimeout(() => {
+      setGameState(prev => ({
+        ...prev,
+        currentMove: ''
+      }));
+    }, move.duration + 500);
+
+  }, [moves]);
 
   // ENERGY RECOVERY SYSTEM
   useEffect(() => {
     if (!isOpen) return;
     
     const energyTimer = setInterval(() => {
-      setBBoyPos(prev => ({ ...prev, energy: Math.min(100, prev.energy + 1) }));
-      setBGirlPos(prev => ({ ...prev, energy: Math.min(100, prev.energy + 1) }));
-    }, 500);
+      setGameState(prev => ({
+        ...prev,
+        bboy: {
+          ...prev.bboy,
+          energy: Math.min(100, prev.bboy.energy + 2)
+        },
+        bgirl: {
+          ...prev.bgirl,
+          energy: Math.min(100, prev.bgirl.energy + 2)
+        }
+      }));
+    }, 1000);
 
     return () => clearInterval(energyTimer);
   }, [isOpen]);
 
+  // COMBO RESET SYSTEM
+  useEffect(() => {
+    const comboTimer = setTimeout(() => {
+      setGameState(prev => ({
+        ...prev,
+        bboy: { ...prev.bboy, combo: Math.max(0, prev.bboy.combo - 1) },
+        bgirl: { ...prev.bgirl, combo: Math.max(0, prev.bgirl.combo - 1) },
+        crowdEnergy: Math.max(0, prev.crowdEnergy - 3)
+      }));
+    }, 3000);
+
+    return () => clearTimeout(comboTimer);
+  }, [gameState.bboy.combo, gameState.bgirl.combo]);
+
+  // PHYSICS ANIMATION LOOP
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let animationFrame;
+    const startTime = Date.now();
+
+    const animate = () => {
+      const currentTime = Date.now() - startTime;
+      
+      setGameState(prev => {
+        const bboyPhysics = prev.bboy.isMoving ? getMovePhysics(moves['w'], currentTime) : { x: 0, y: 0, rotation: 0, scale: 1 };
+        const bgirlPhysics = prev.bgirl.isMoving ? getMovePhysics(moves['ArrowUp'], currentTime) : { x: 0, y: 0, rotation: 0, scale: 1 };
+
+        return {
+          ...prev,
+          bboy: { ...prev.bboy, ...bboyPhysics },
+          bgirl: { ...prev.bgirl, ...bgirlPhysics }
+        };
+      });
+
+      animationFrame = requestAnimationFrame(animate);
+    };
+
+    animate();
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isOpen, gameState.bboy.isMoving, gameState.bgirl.isMoving, getMovePhysics, moves]);
+
+  // KEYBOARD CONTROLS
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyPress = (event) => {
+      event.preventDefault();
       executeMove(event.key);
     };
 
@@ -174,311 +375,365 @@ const BattleGame = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isOpen, executeMove]);
 
-  // COMBO RESET with crowd effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (combo > 0) {
-        setCrowdHype(prev => Math.max(0, prev - 10));
-        setCombo(0);
-      }
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [combo]);
+  // RESET GAME
+  const resetGame = useCallback(() => {
+    setGameState({
+      bboy: { x: 0, y: 0, rotation: 0, energy: 100, combo: 0, score: 0, isMoving: false },
+      bgirl: { x: 0, y: 0, rotation: 0, energy: 100, combo: 0, score: 0, isMoving: false },
+      currentMove: '',
+      battlePhase: 'WARM UP',
+      crowdEnergy: 50,
+      winner: null,
+      round: 1,
+      maxRounds: 3
+    });
+  }, []);
 
   if (!isOpen) return null;
 
-  // CROWD HYPE COLOR
-  const crowdColor = crowdHype > 80 ? '#ff0000' : crowdHype > 60 ? '#ffff00' : crowdHype > 40 ? '#00ff00' : '#666';
+  // CROWD ENERGY COLOR
+  const crowdColor = gameState.crowdEnergy > 80 ? '#ff1493' : 
+                    gameState.crowdEnergy > 60 ? '#ffff00' : 
+                    gameState.crowdEnergy > 40 ? '#00ff00' : '#666';
 
   return (
     <div className="battle-game">
-      <button className="close-battle" onClick={onClose}>
-        ✕ PEACE OUT
+      {/* CLOSE BUTTON */}
+      <button 
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: '#ff0000',
+          color: 'white',
+          border: 'none',
+          padding: '10px 20px',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          fontSize: '1rem',
+          fontWeight: 'bold'
+        }}
+      >
+        ✕ EXIT BATTLE
       </button>
-      
-      {/* REALISTIC BATTLE HUD */}
-      <div className="battle-hud" style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        gap: '20px',
-        marginBottom: '20px',
-        padding: '15px',
-        background: 'rgba(0,0,0,0.8)',
-        borderRadius: '10px',
-        border: '2px solid #00ff00'
+
+      {/* RESET BUTTON */}
+      <button 
+        onClick={resetGame}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          background: '#00ff00',
+          color: 'black',
+          border: 'none',
+          padding: '10px 20px',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          fontSize: '1rem',
+          fontWeight: 'bold'
+        }}
+      >
+        🔄 RESET
+      </button>
+
+      {/* TITLE */}
+      <h1 style={{ 
+        marginBottom: '20px', 
+        fontSize: '3rem', 
+        color: crowdColor,
+        textShadow: `0 0 20px ${crowdColor}`,
+        animation: gameState.crowdEnergy > 80 ? 'pulse 1s infinite' : 'none'
       }}>
-        <div style={{ textAlign: 'left' }}>
-          <div style={{ color: '#00bfff', fontSize: '1.2rem', fontWeight: 'bold' }}>
-            B-BOY: {score.bboy} pts
-          </div>
-          <div style={{ color: bBoyPos.energy < 30 ? '#ff0000' : '#00ff00' }}>
-            Energy: {bBoyPos.energy}%
-          </div>
-        </div>
-        
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ color: crowdColor, fontSize: '1.5rem', fontWeight: 'bold' }}>
-            CROWD HYPE: {crowdHype}%
-          </div>
-          <div style={{ color: '#ffff00' }}>
-            COMBO: {combo}x
-          </div>
-        </div>
-        
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ color: '#ff69b4', fontSize: '1.2rem', fontWeight: 'bold' }}>
-            B-GIRL: {score.bgirl} pts
-          </div>
-          <div style={{ color: bGirlPos.energy < 30 ? '#ff0000' : '#00ff00' }}>
-            Energy: {bGirlPos.energy}%
-          </div>
-        </div>
-      </div>
-
-      <h1 style={{ marginBottom: '10px', fontSize: '2.5rem', color: '#00ff00' }}>
-        🎮 AUTHENTIC BREAKIN' BATTLE 🎮
+        🎮 BREAKIN' BATTLE ARENA 🎮
       </h1>
-      
-      <div style={{ color: crowdColor, fontSize: '1.3rem', marginBottom: '20px' }}>
-        {battlePhase}
+
+      {/* BATTLE STATUS */}
+      <div style={{
+        fontSize: '1.5rem',
+        color: crowdColor,
+        marginBottom: '15px',
+        fontWeight: 'bold'
+      }}>
+        {gameState.battlePhase}
       </div>
 
-      {currentMove && (
-        <div style={{ 
-          fontSize: '1.2rem', 
-          color: '#ffff00', 
-          textShadow: '0 0 10px #ffff00',
+      {/* CURRENT MOVE DISPLAY */}
+      {gameState.currentMove && (
+        <div style={{
+          fontSize: '1.2rem',
+          color: '#ffff00',
+          background: 'rgba(0,0,0,0.8)',
+          padding: '15px 30px',
+          borderRadius: '10px',
           marginBottom: '20px',
-          fontWeight: 'bold',
-          background: 'rgba(0,0,0,0.7)',
-          padding: '10px',
-          borderRadius: '5px'
+          border: '2px solid #ffff00',
+          textAlign: 'center',
+          maxWidth: '600px'
         }}>
-          {currentMove}
+          {gameState.currentMove}
         </div>
       )}
 
-      {/* REALISTIC BATTLE ARENA */}
-      <div className="battle-arena" style={{ position: 'relative', height: '300px', margin: '20px 0' }}>
-        {/* B-Boy with realistic physics */}
-        <div 
-          className="bboy-left"
-          style={{
-            position: 'absolute',
-            left: '20%',
-            top: '50%',
-            transform: `translate(${bBoyPos.x}px, ${bBoyPos.y}px) rotate(${bBoyPos.rotation}deg)`,
-            fontSize: bBoyPos.move !== '🕺' ? '5rem' : '4rem',
-            transition: isSpinning.bboy ? 'none' : 'all 0.3s ease',
-            filter: bBoyPos.energy < 30 ? 'brightness(0.5)' : 'brightness(1)',
-            animation: isSpinning.bboy ? 'spin 0.2s linear infinite' : 'none'
-          }}
-        >
-          {bBoyPos.move}
-        </div>
-        
-        {/* B-Girl with realistic physics */}
-        <div 
-          className="bgirl-right"
-          style={{
-            position: 'absolute',
-            right: '20%',
-            top: '50%',
-            transform: `translate(${bGirlPos.x}px, ${bGirlPos.y}px) rotate(${bGirlPos.rotation}deg)`,
-            fontSize: bGirlPos.move !== '💃' ? '5rem' : '4rem',
-            transition: isSpinning.bgirl ? 'none' : 'all 0.3s ease',
-            filter: bGirlPos.energy < 30 ? 'brightness(0.5)' : 'brightness(1)',
-            animation: isSpinning.bgirl ? 'spin 0.2s linear infinite' : 'none'
-          }}
-        >
-          {bGirlPos.move}
+      {/* GAME HUD */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        gap: '30px',
+        width: '100%',
+        maxWidth: '900px',
+        marginBottom: '30px',
+        padding: '20px',
+        background: 'rgba(0,0,0,0.7)',
+        borderRadius: '15px',
+        border: '3px solid #00ff00'
+      }}>
+        {/* B-BOY STATS */}
+        <div style={{ textAlign: 'left' }}>
+          <div style={{ color: '#00bfff', fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '10px' }}>
+            🕺 B-BOY
+          </div>
+          <div style={{ color: '#fff', fontSize: '1.2rem' }}>
+            Score: {gameState.bboy.score}
+          </div>
+          <div style={{ color: gameState.bboy.energy < 30 ? '#ff0000' : '#00ff00' }}>
+            Energy: {gameState.bboy.energy}%
+          </div>
+          <div style={{ color: '#ffff00' }}>
+            Combo: {gameState.bboy.combo}x
+          </div>
         </div>
 
-        {/* Battle floor with style */}
+        {/* CROWD HYPE */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: crowdColor, fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '10px' }}>
+            🎵 CROWD HYPE 🎵
+          </div>
+          <div style={{ 
+            fontSize: '2rem', 
+            color: crowdColor,
+            textShadow: `0 0 15px ${crowdColor}`
+          }}>
+            {gameState.crowdEnergy}%
+          </div>
+          <div style={{
+            width: '200px',
+            height: '20px',
+            background: '#333',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            margin: '10px auto'
+          }}>
+            <div style={{
+              width: `${gameState.crowdEnergy}%`,
+              height: '100%',
+              background: `linear-gradient(90deg, #00ff00, ${crowdColor})`,
+              transition: 'width 0.3s ease'
+            }}></div>
+          </div>
+        </div>
+
+        {/* B-GIRL STATS */}
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ color: '#ff69b4', fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '10px' }}>
+            💃 B-GIRL
+          </div>
+          <div style={{ color: '#fff', fontSize: '1.2rem' }}>
+            Score: {gameState.bgirl.score}
+          </div>
+          <div style={{ color: gameState.bgirl.energy < 30 ? '#ff0000' : '#00ff00' }}>
+            Energy: {gameState.bgirl.energy}%
+          </div>
+          <div style={{ color: '#ffff00' }}>
+            Combo: {gameState.bgirl.combo}x
+          </div>
+        </div>
+      </div>
+
+      {/* BATTLE ARENA */}
+      <div className="battle-arena" style={{
+        position: 'relative',
+        width: '800px',
+        height: '400px',
+        background: 'radial-gradient(circle, #001122, #000000)',
+        border: `4px solid ${crowdColor}`,
+        borderRadius: '15px',
+        overflow: 'hidden',
+        boxShadow: `0 0 30px ${crowdColor}`,
+        marginBottom: '30px'
+      }}>
+        {/* DANCE FLOOR */}
         <div style={{
           position: 'absolute',
-          bottom: '20px',
-          left: '10%',
-          right: '10%',
-          height: '8px',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '50px',
           background: `linear-gradient(90deg, #00bfff, ${crowdColor}, #ff69b4)`,
-          boxShadow: `0 0 20px ${crowdColor}`,
-          borderRadius: '4px'
+          opacity: 0.8
         }}></div>
-        
-        {/* Crowd effect */}
-        {crowdHype > 70 && (
+
+        {/* B-BOY CHARACTER */}
+        <div style={{
+          position: 'absolute',
+          left: '100px',
+          bottom: '50px',
+          fontSize: '6rem',
+          transform: `translate(${gameState.bboy.x}px, ${gameState.bboy.y}px) rotate(${gameState.bboy.rotation}deg) scale(${gameState.bboy.scale || 1})`,
+          transition: gameState.bboy.isMoving ? 'none' : 'all 0.5s ease',
+          color: '#00bfff',
+          textShadow: '0 0 20px #00bfff',
+          filter: gameState.bboy.energy < 30 ? 'brightness(0.5)' : 'brightness(1)',
+          zIndex: 10
+        }}>
+          🕺
+        </div>
+
+        {/* B-GIRL CHARACTER */}
+        <div style={{
+          position: 'absolute',
+          right: '100px',
+          bottom: '50px',
+          fontSize: '6rem',
+          transform: `translate(${gameState.bgirl.x}px, ${gameState.bgirl.y}px) rotate(${gameState.bgirl.rotation}deg) scale(${gameState.bgirl.scale || 1})`,
+          transition: gameState.bgirl.isMoving ? 'none' : 'all 0.5s ease',
+          color: '#ff69b4',
+          textShadow: '0 0 20px #ff69b4',
+          filter: gameState.bgirl.energy < 30 ? 'brightness(0.5)' : 'brightness(1)',
+          zIndex: 10
+        }}>
+          💃
+        </div>
+
+        {/* CROWD EFFECTS */}
+        {gameState.crowdEnergy > 75 && (
           <div style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: `radial-gradient(circle, transparent 60%, ${crowdColor}30)`,
-            animation: 'pulse 1s ease-in-out infinite',
+            background: `radial-gradient(circle, transparent 40%, ${crowdColor}20)`,
+            animation: 'pulse 2s ease-in-out infinite',
             pointerEvents: 'none'
           }}></div>
         )}
       </div>
 
-      {/* MOVE HISTORY */}
-      {moveHistory.length > 0 && (
-        <div style={{ 
-          marginBottom: '20px', 
-          padding: '10px', 
-          background: 'rgba(0,0,0,0.5)', 
-          borderRadius: '5px' 
-        }}>
-          <h3 style={{ color: '#00ff00', marginBottom: '10px' }}>LAST MOVES:</h3>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {moveHistory.map((move, index) => (
-              <span key={index} style={{ 
-                color: move.dancer === 'bboy' ? '#00bfff' : '#ff69b4',
-                background: 'rgba(255,255,255,0.1)',
-                padding: '5px 10px',
-                borderRadius: '3px',
-                fontSize: '0.9rem'
-              }}>
-                {move.name} ({move.difficulty}/10)
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ENHANCED CONTROLS */}
-      <div className="battle-controls">
-        <h2 style={{ color: '#00ff00' }}>🎯 AUTHENTIC BREAKING MOVES 🎯</h2>
-        
-        <div className="control-instructions" style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: '20px',
-          marginTop: '20px'
-        }}>
-          <div>
-            <h3 style={{ color: '#00bfff', marginBottom: '15px' }}>B-BOY FOUNDATION</h3>
-            {Object.entries(moves).filter(([_, move]) => move.type === 'bboy').slice(0, 4).map(([key, move]) => (
-              <div key={key} className="control-key" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                <div className="key-button" style={{ 
-                  minWidth: '30px', 
-                  height: '30px', 
-                  background: '#333', 
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '10px',
-                  borderRadius: '5px'
-                }}>{key.toUpperCase()}</div>
-                <div>
-                  <div style={{ color: '#fff', fontWeight: 'bold' }}>{move.name}</div>
-                  <div style={{ color: '#aaa', fontSize: '0.8rem' }}>Difficulty: {move.difficulty}/10</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <h3 style={{ color: '#ffff00', marginBottom: '15px' }}>B-BOY POWER</h3>
-            {Object.entries(moves).filter(([_, move]) => move.type === 'bboy').slice(4).map(([key, move]) => (
-              <div key={key} className="control-key" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                <div className="key-button" style={{ 
-                  minWidth: '30px', 
-                  height: '30px', 
-                  background: '#333', 
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '10px',
-                  borderRadius: '5px'
-                }}>{key.toUpperCase()}</div>
-                <div>
-                  <div style={{ color: '#fff', fontWeight: 'bold' }}>{move.name}</div>
-                  <div style={{ color: '#aaa', fontSize: '0.8rem' }}>Difficulty: {move.difficulty}/10</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <h3 style={{ color: '#ff69b4', marginBottom: '15px' }}>B-GIRL FOUNDATION</h3>
-            {Object.entries(moves).filter(([_, move]) => move.type === 'bgirl').slice(0, 4).map(([key, move]) => (
-              <div key={key} className="control-key" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                <div className="key-button" style={{ 
-                  minWidth: '30px', 
-                  height: '30px', 
-                  background: '#333', 
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '10px',
-                  borderRadius: '5px'
-                }}>{key.toUpperCase()}</div>
-                <div>
-                  <div style={{ color: '#fff', fontWeight: 'bold' }}>{move.name}</div>
-                  <div style={{ color: '#aaa', fontSize: '0.8rem' }}>Difficulty: {move.difficulty}/10</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <h3 style={{ color: '#ff1493', marginBottom: '15px' }}>B-GIRL POWER</h3>
-            {Object.entries(moves).filter(([_, move]) => move.type === 'bgirl').slice(4).map(([key, move]) => (
-              <div key={key} className="control-key" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                <div className="key-button" style={{ 
-                  minWidth: '30px', 
-                  height: '30px', 
-                  background: '#333', 
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '10px',
-                  borderRadius: '5px'
-                }}>{key.toUpperCase()}</div>
-                <div>
-                  <div style={{ color: '#fff', fontWeight: 'bold' }}>{move.name}</div>
-                  <div style={{ color: '#aaa', fontSize: '0.8rem' }}>Difficulty: {move.difficulty}/10</div>
-                </div>
-              </div>
-            ))}
+      {/* CONTROLS GUIDE */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '40px',
+        maxWidth: '800px',
+        background: 'rgba(0,0,0,0.6)',
+        padding: '25px',
+        borderRadius: '15px',
+        border: '2px solid #00ff00'
+      }}>
+        {/* B-BOY CONTROLS */}
+        <div>
+          <h3 style={{ color: '#00bfff', marginBottom: '20px', fontSize: '1.5rem' }}>
+            🕺 B-BOY CONTROLS
+          </h3>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ 
+                background: '#333', 
+                color: '#fff', 
+                padding: '8px 12px', 
+                borderRadius: '5px', 
+                minWidth: '40px', 
+                textAlign: 'center',
+                fontWeight: 'bold'
+              }}>W</div>
+              <div style={{ color: '#fff' }}>TOP ROCK (2/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>A</div>
+              <div style={{ color: '#fff' }}>WINDMILL (9/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>S</div>
+              <div style={{ color: '#fff' }}>FREEZE (6/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>D</div>
+              <div style={{ color: '#fff' }}>FLARE (10/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>Q</div>
+              <div style={{ color: '#fff' }}>HEADSPIN (8/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>E</div>
+              <div style={{ color: '#fff' }}>6-STEP (4/10)</div>
+            </div>
           </div>
         </div>
 
-        <div style={{ 
-          marginTop: '30px', 
-          padding: '20px', 
-          background: 'rgba(0,255,0,0.1)', 
-          borderRadius: '10px',
-          border: '1px solid #00ff00'
-        }}>
-          <div style={{ color: '#00ff00', fontSize: '1.3rem', marginBottom: '10px' }}>
-            💡 REALISTIC BATTLE MECHANICS:
-          </div>
-          <div style={{ color: '#ffff00', lineHeight: '1.6' }}>
-            ⚡ <strong>Energy System:</strong> Power moves drain energy, manage stamina!<br/>
-            🔥 <strong>Difficulty Scoring:</strong> Harder moves = more points<br/>
-            👥 <strong>Crowd Hype:</strong> Sick moves get the crowd hyped<br/>
-            🔄 <strong>Physics:</strong> Realistic spinning, freezing, and movement<br/>
-            📈 <strong>Combo Multiplier:</strong> Chain moves for massive scores<br/>
-            📊 <strong>Move History:</strong> Track your battle progression
+        {/* B-GIRL CONTROLS */}
+        <div>
+          <h3 style={{ color: '#ff69b4', marginBottom: '20px', fontSize: '1.5rem' }}>
+            💃 B-GIRL CONTROLS
+          </h3>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>↑</div>
+              <div style={{ color: '#fff' }}>TOP ROCK (2/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>←</div>
+              <div style={{ color: '#fff' }}>WINDMILL (9/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>↓</div>
+              <div style={{ color: '#fff' }}>HOLLOWBACK (7/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>→</div>
+              <div style={{ color: '#fff' }}>THREAD (8/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '50px', textAlign: 'center', fontWeight: 'bold' }}>SPACE</div>
+              <div style={{ color: '#fff' }}>CRICKET (10/10)</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#333', color: '#fff', padding: '8px 12px', borderRadius: '5px', minWidth: '50px', textAlign: 'center', fontWeight: 'bold' }}>SHIFT</div>
+              <div style={{ color: '#fff' }}>BACKSPIN (5/10)</div>
+            </div>
           </div>
         </div>
       </div>
-      
+
+      {/* GAME TIPS */}
+      <div style={{
+        marginTop: '25px',
+        maxWidth: '600px',
+        background: 'rgba(0,255,0,0.1)',
+        padding: '20px',
+        borderRadius: '10px',
+        border: '2px solid #00ff00',
+        textAlign: 'center'
+      }}>
+        <div style={{ color: '#00ff00', fontSize: '1.2rem', marginBottom: '15px' }}>
+          💡 BATTLE TIPS:
+        </div>
+        <div style={{ color: '#ffff00', lineHeight: '1.8' }}>
+          🔥 Chain moves to build combos<br/>
+          ⚡ Higher difficulty = more points<br/>
+          💨 Manage your energy wisely<br/>
+          👥 Hype the crowd for bonuses<br/>
+          🎵 Feel the rhythm, feel the flow!
+        </div>
+      </div>
+
+      {/* CSS ANIMATIONS */}
       <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        
         @keyframes pulse {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.8; }
+          0%, 100% { opacity: 0.8; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.05); }
         }
       `}</style>
     </div>
