@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FiPlay, FiUsers, FiTrendingUp, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi';
+import BattleGame from '../components/BattleGame';
 
 const HeroSection = styled.section`
   background: linear-gradient(135deg, ${props => props.theme.colors.primary}, ${props => props.theme.colors.accent});
@@ -196,6 +197,92 @@ const ClassSchedule = styled.div`
   }
 `;
 
+const BattleZoneSection = styled.section`
+  padding: 6rem 0;
+  background: linear-gradient(135deg, ${props => props.theme.colors.background} 0%, ${props => props.theme.colors.gray100} 100%);
+  text-align: center;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 80%, ${props => props.theme.colors.primaryLight}15 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, ${props => props.theme.colors.accentLight}15 0%, transparent 50%);
+    pointer-events: none;
+  }
+`;
+
+const DanceButtonGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+  position: relative;
+  z-index: 1;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+`;
+
+const BattleStats = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 4rem;
+  position: relative;
+  z-index: 1;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+`;
+
+const StatBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  
+  span {
+    font-size: 2rem;
+  }
+  
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  strong {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  
+  small {
+    font-size: 0.875rem;
+    opacity: 0.9;
+  }
+  
+  &:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+  }
+`;
+
 const SocialSection = styled.section`
   padding: 6rem 0;
   background: white;
@@ -238,8 +325,19 @@ const SocialIcon = styled.div`
 `;
 
 const Home = () => {
+  const [battleGameOpen, setBattleGameOpen] = useState(false);
+
+  const openBattleGame = () => {
+    setBattleGameOpen(true);
+  };
+
+  const closeBattleGame = () => {
+    setBattleGameOpen(false);
+  };
+
   return (
     <>
+      <BattleGame isOpen={battleGameOpen} onClose={closeBattleGame} />
       <HeroSection>
         <HeroContent>
           <HeroTitle
@@ -371,6 +469,44 @@ const Home = () => {
           </ClassesGrid>
         </SectionContent>
       </ClassesSection>
+
+      <BattleZoneSection>
+        <SectionContent>
+          <SectionTitle className="text-gradient-ocean">🔥 Battle Zone - Choose Your Move! 🔥</SectionTitle>
+          <p>Hover over these buttons to see them DANCE! Each button has its own signature move!</p>
+          <DanceButtonGrid>
+            <button className="btn-toprock">TOP ROCK</button>
+            <button className="btn-poplock">POP & LOCK</button>
+            <button className="btn-breakdance">BREAKIN'</button>
+            <button className="btn-windmill">WINDMILL</button>
+            <button className="btn-freeze">FREEZE</button>
+            <button className="btn-battle" onClick={openBattleGame}>BATTLE MODE</button>
+          </DanceButtonGrid>
+          <BattleStats>
+            <StatBadge className="gradient-ocean">
+              <span>🏆</span>
+              <div>
+                <strong>12</strong>
+                <small>Battle Wins</small>
+              </div>
+            </StatBadge>
+            <StatBadge className="gradient-emerald">
+              <span>⚡</span>
+              <div>
+                <strong>500+</strong>
+                <small>Moves Mastered</small>
+              </div>
+            </StatBadge>
+            <StatBadge className="gradient-teal">
+              <span>🎵</span>
+              <div>
+                <strong>24/7</strong>
+                <small>Rhythm Mode</small>
+              </div>
+            </StatBadge>
+          </BattleStats>
+        </SectionContent>
+      </BattleZoneSection>
 
       <SocialSection>
         <SectionContent>

@@ -1,52 +1,64 @@
 const theme = {
   colors: {
-    // Primary colors for dance/hip-hop theme
-    primary: '#ff6b35', // Vibrant orange
-    primaryDark: '#e55a30',
-    primaryLight: '#ff8456',
+    // Primary colors - Ocean Blue theme
+    primary: '#0ea5e9', // Sky blue
+    primaryDark: '#0284c7',
+    primaryLight: '#38bdf8',
     
-    // Secondary colors
-    secondary: '#2d3748', // Dark gray
-    secondaryDark: '#1a202c',
-    secondaryLight: '#4a5568',
+    // Secondary colors - Deep teal
+    secondary: '#0f766e', // Dark teal
+    secondaryDark: '#134e4a',
+    secondaryLight: '#14b8a6',
     
-    // Accent colors
-    accent: '#9f7aea', // Purple
-    accentDark: '#805ad5',
-    accentLight: '#b794f6',
+    // Accent colors - Emerald green
+    accent: '#10b981', // Emerald
+    accentDark: '#059669',
+    accentLight: '#34d399',
     
     // Neutral colors
-    background: '#fafafa',
+    background: '#f8fafc', // Very light blue-gray
     white: '#ffffff',
     black: '#000000',
-    text: '#2d3748',
-    textDark: '#1a202c',
-    textLight: '#718096',
+    text: '#1e293b', // Dark slate
+    textDark: '#0f172a',
+    textLight: '#64748b',
     
-    // Gray scale
-    gray100: '#f7fafc',
-    gray200: '#edf2f7',
-    gray300: '#e2e8f0',
-    gray400: '#cbd5e0',
-    gray500: '#a0aec0',
-    gray600: '#718096',
-    gray700: '#4a5568',
-    gray800: '#2d3748',
-    gray900: '#1a202c',
+    // Blue-gray scale
+    gray100: '#f1f5f9',
+    gray200: '#e2e8f0',
+    gray300: '#cbd5e1',
+    gray400: '#94a3b8',
+    gray500: '#64748b',
+    gray600: '#475569',
+    gray700: '#334155',
+    gray800: '#1e293b',
+    gray900: '#0f172a',
     
-    // Status colors
-    success: '#38a169',
-    successLight: '#f0fff4',
-    error: '#e53e3e',
-    errorLight: '#fed7d7',
-    warning: '#ed8936',
-    warningLight: '#fffaf0',
-    info: '#3182ce',
-    infoLight: '#ebf8ff',
+    // Status colors - Blue/Green theme
+    success: '#22c55e', // Green
+    successLight: '#f0fdf4',
+    error: '#0891b2', // Changed from red to cyan
+    errorLight: '#ecfeff',
+    warning: '#eab308', // Yellow (keeping as it's not red)
+    warningLight: '#fefce8',
+    info: '#3b82f6', // Blue
+    infoLight: '#eff6ff',
     
-    // Additional colors
+    // Additional blue/green colors
     lightGray: '#e2e8f0',
-    darkGray: '#4a5568',
+    darkGray: '#475569',
+    
+    // Dance-specific colors
+    rhythm: '#06b6d4', // Cyan for rhythm
+    groove: '#10b981', // Emerald for groove
+    energy: '#3b82f6', // Blue for energy
+    flow: '#14b8a6', // Teal for flow
+    
+    // Black accents for that street style
+    blackAccent: '#000000', // Pure black
+    charcoal: '#1f2937', // Dark charcoal
+    slate: '#374151', // Slate gray
+    shadow: '#111827', // Deep shadow
   },
   
   fonts: {
