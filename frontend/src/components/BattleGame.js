@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 const BattleGame = ({ isOpen, onClose }) => {
   const [bBoyPos, setBBoyPos] = useState({ x: 0, y: 0, move: '🕺' });
@@ -7,7 +7,7 @@ const BattleGame = ({ isOpen, onClose }) => {
   const [currentMove, setCurrentMove] = useState('');
   const [combo, setCombo] = useState(0);
 
-  const moves = {
+  const moves = useMemo(() => ({
     // B-Boy moves (Left side)
     'q': { name: 'TOP ROCK', emoji: '🕺', type: 'bboy' },
     'w': { name: 'WINDMILL', emoji: '🌪️', type: 'bboy' },
@@ -23,7 +23,7 @@ const BattleGame = ({ isOpen, onClose }) => {
     'j': { name: 'HEADSTAND', emoji: '🤸', type: 'bgirl' },
     'k': { name: 'BACKSPIN', emoji: '🌀', type: 'bgirl' },
     'l': { name: 'FLARE', emoji: '🔥', type: 'bgirl' },
-  };
+  }), []);
 
   const executeMove = useCallback((key) => {
     const move = moves[key.toLowerCase()];
