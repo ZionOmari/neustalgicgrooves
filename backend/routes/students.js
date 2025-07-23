@@ -1,7 +1,55 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const Student = require('../models/Student');
+
+// Safely import Student model
+let Student;
+try {
+  Student = require('../models/Student');
+} catch (error) {
+  console.log('Student model not available - using mock data');
+  Student = null;
+}
+
+// Mock data for development when MongoDB is not available
+const mockStudents = [
+  {
+    id: '1',
+    firstName: 'Marcus',
+    lastName: 'Johnson',
+    email: 'marcus.j@email.com',
+    phone: '555-0101',
+    dateOfBirth: '2005-03-15',
+    waiverSigned: true,
+    paymentStatus: 'paid',
+    firstClassTaken: true,
+    createdAt: new Date('2024-01-15')
+  },
+  {
+    id: '2', 
+    firstName: 'Sofia',
+    lastName: 'Rodriguez',
+    email: 'sofia.r@email.com',
+    phone: '555-0102',
+    dateOfBirth: '2004-08-22',
+    waiverSigned: true,
+    paymentStatus: 'paid',
+    firstClassTaken: false,
+    createdAt: new Date('2024-01-10')
+  },
+  {
+    id: '3',
+    firstName: 'Jamal',
+    lastName: 'Williams',
+    email: 'jamal.w@email.com', 
+    phone: '555-0103',
+    dateOfBirth: '2006-12-03',
+    waiverSigned: true,
+    paymentStatus: 'pending',
+    firstClassTaken: false,
+    createdAt: new Date('2024-01-08')
+  }
+];
 
 // @route   POST /api/students/register
 // @desc    Register a new student
@@ -20,6 +68,21 @@ router.post('/register', [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+
+    // If no database, return mock success response
+    if (global.NO_DATABASE || !Student) {
+      const { firstName, lastName, email } = req.body;
+      return res.status(201).json({
+        message: 'Student registered successfully (mock data)',
+        student: {
+          id: `mock-${Date.now()}`,
+          firstName,
+          lastName,
+          email,
+          waiverSigned: true
+        }
+      });
     }
 
     const {
@@ -76,6 +139,17 @@ router.post('/register', [
 // @access  Private (dashboard)
 router.get('/', async (req, res) => {
   try {
+    // For now, always return mock data for development
+    return res.json({
+      students: mockStudents,
+      totalPages: 1,
+      currentPage: 1,
+      totalStudents: mockStudents.length,
+      message: 'Using mock data for development'
+    });
+
+    // Original database code (commented out for debugging)
+    /*
     const { page = 1, limit = 10, search } = req.query;
     const query = search ? {
       $or: [
@@ -99,9 +173,10 @@ router.get('/', async (req, res) => {
       currentPage: page,
       totalStudents: total
     });
+    */
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Students route error:', error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
