@@ -195,4 +195,4 @@ This is a community-focused project. For feature requests or bug reports, please
 
 ## License
 
-© 2024 Neustalgic Grooves. All rights reserved. 
+© 2024 Neustalgic Grooves. All rights reserved.
